@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام إدارة مبيعات القات الاحترافي</title>
+<style>
+    :root {
+        --primary: #2e7d32; --primary-dark: #1b5e20;
+        --secondary: #1565c0; --danger: #d32f2f; --warning: #ef6c00;
+        --bg: #f4f7f6; --card-bg: #ffffff; --text: #333; --border: #e0e0e0;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; padding-top: 62px; }
+    .main-nav { position: fixed; top: 0; left: 0; right: 0; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); z-index: 1000; padding: 8px; overflow-x: auto; white-space: nowrap; display: flex; gap: 6px; -webkit-overflow-scrolling: touch; }
+    .main-nav::-webkit-scrollbar { height: 0; }
+    .nav-btn { flex: 0 0 auto; padding: 9px 14px; border: none; border-radius: 8px; background: #f0f2f5; color: #555; font-weight: 600; cursor: pointer; font-size: 0.85rem; font-family: inherit; white-space: nowrap; transition: 0.2s; }
+    .nav-btn:hover { background: #e0e4e8; }
+    .nav-btn.active { background: var(--primary); color: #fff; box-shadow: 0 3px 8px rgba(46,125,50,0.3); }
+    .container { max-width: 1200px; margin: auto; padding: 12px; }
+    .page { display: none; animation: fadeIn 0.25s; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: translateY(0);} }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: var(--card-bg); padding: 14px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-bottom: 4px solid var(--primary); }
+    .stat-card h4 { margin: 0 0 6px; color: #666; font-size: 0.8rem; }
+    .stat-card .value { font-size: 1.3rem; font-weight: bold; color: var(--primary); }
+    .card { background: var(--card-bg); padding: 18px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 16px; }
+    h3 { margin-top: 0; color: var(--primary); border-right: 4px solid var(--primary); padding-right: 10px; font-size: 1.05rem; }
+    .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 10px; }
+    input, select { padding: 10px; border: 1px solid var(--border); border-radius: 8px; outline: none; background: #fafafa; font-family: inherit; font-size: 0.95rem; width: 100%; }
+    input:focus, select:focus { border-color: var(--primary); background: #fff; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    button { padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; color: white; transition: 0.2s; font-family: inherit; font-size: 0.9rem; }
+    button:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-primary { background: var(--primary); }
+    .btn-secondary { background: var(--secondary); }
+    .btn-danger { background: var(--danger); }
+    .btn-warning { background: var(--warning); }
+    .btn-neutral { background: #607d8b; }
+    .btn-clear { background: #9e9e9e; }
+    .btn-sm { padding: 5px 10px; font-size: 0.78rem; border-radius: 6px; }
+
+    /* ==== حقل تاريخ مع زر 📅 ==== */
+    .date-wrap { display: flex; gap: 4px; align-items: stretch; }
+    .date-wrap input { flex: 1; }
+    .date-wrap .btn-today {
+        flex: 0 0 auto; padding: 6px 10px; font-size: 0.95rem;
+        background: var(--neutral, #607d8b); border-radius: 8px;
+        cursor: pointer; min-width: 40px;
+    }
+    .date-wrap .btn-today:hover { background: #455a64; }
+
+    .table-container { overflow-x: auto; margin-top: 10px; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; background: white; font-size: 0.88rem; }
+    th { background: #f1f3f4; color: #555; padding: 10px; border: 1px solid #eee; white-space: nowrap; font-weight: 600; }
+    td { padding: 9px; border: 1px solid #eee; text-align: center; }
+    tr:nth-child(even) { background: #fafafa; }
+    tbody tr:hover { background: #f0f7f0; }
+    .search-bar { width: 100%; padding: 12px 14px; font-size: 0.95rem; border-radius: 10px; border: 2px solid var(--primary); margin-bottom: 14px; }
+    .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.78rem; font-weight: 600; }
+    .badge-cash { background: #e8f5e9; color: #2e7d32; }
+    .badge-debt { background: #ffebee; color: #c62828; }
+
+    td.editable { position: relative; cursor: pointer; transition: background 0.15s; min-width: 70px; }
+    td.editable::before { content: '✎'; position: absolute; top: 1px; left: 3px; font-size: 0.65rem; color: var(--primary); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+    td.editable:hover { background: #e8f5e9 !important; }
+    td.editable:hover::before { opacity: 0.7; }
+    td.editable .inline-editor { width: 100%; min-width: 60px; padding: 4px 6px; font-size: 0.85rem; border: 2px solid var(--primary); border-radius: 4px; outline: none; font-family: inherit; background: #fff; text-align: center; }
+    .hint-edit { background: #fff8e1; color: #6d4c00; padding: 8px 12px; border-radius: 8px; font-size: 0.83rem; margin-bottom: 10px; border-right: 4px solid var(--warning); }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 15px; }
+    .modal-overlay.active { display: flex; }
+    .modal-box { background: white; border-radius: 14px; padding: 20px; max-width: 620px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .modal-box h3 { margin-top: 0; }
+    .modal-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+    .modal-form .full { grid-column: 1 / -1; }
+    .form-field { display: flex; flex-direction: column; gap: 4px; }
+    .form-field label { font-size: 0.82rem; color: #555; font-weight: 600; }
+    @media (max-width: 500px) { .modal-form { grid-template-columns: 1fr; } }
+
+    .info-box { padding: 12px; border-radius: 10px; margin-bottom: 12px; font-size: 0.9rem; }
+    .info-box.green { background: #e8f5e9; color: #1b5e20; border-right: 4px solid var(--primary); }
+    .info-box.red { background: #ffebee; color: #b71c1c; border-right: 4px solid var(--danger); }
+    .info-box.blue { background: #e3f2fd; color: #0d47a1; border-right: 4px solid var(--secondary); }
+    .net-row { display: flex; justify-content: space-between; padding: 9px 6px; border-bottom: 1px solid #eceff1; font-size: 0.92rem; }
+    .net-row:last-child { border-bottom: none; }
+    .net-row.total { font-weight: bold; font-size: 1.05rem; color: var(--primary); background: #e8f5e9; border-radius: 8px; padding: 12px; margin-top: 8px; border-bottom: none; }
+    .net-row.total.negative { color: #fff; background: var(--danger); }
+    .empty { color: #999; text-align: center; padding: 20px; }
+    .actions-cell { white-space: nowrap; }
+    .actions-cell button { margin: 0 2px; }
+</style>
+</head>
+<body>
+
+<nav class="main-nav">
+    <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard')">🏠 الرئيسية</button>
+    <button class="nav-btn" data-page="sale" onclick="showPage('sale')">🛒 بيع جديد</button>
+    <button class="nav-btn" data-page="debts" onclick="showPage('debts')">📒 ديون الزبائن</button>
+    <button class="nav-btn" data-page="farms" onclick="showPage('farms')">💰 مستحقات الجرب</button>
+    <button class="nav-btn" data-page="salesLog" onclick="showPage('salesLog')">🧾 سجل المبيعات</button>
+    <button class="nav-btn" data-page="wages" onclick="showPage('wages')">👷 أجور العمال</button>
+    <button class="nav-btn" data-page="net" onclick="showPage('net')">🧮 صافي المالك</button>
+</nav>
+
+<div class="container">
+
+    <!-- Dashboard -->
+    <section id="page-dashboard" class="page active">
+        <h2 style="text-align:center; color: var(--primary); margin-top: 0;">🌿 لوحة التحكم</h2>
+        <div class="stats-grid">
+            <div class="stat-card"><h4>إجمالي الكاش</h4><div class="value" id="cashTotal">0</div></div>
+            <div class="stat-card"><h4>إجمالي الديون</h4><div class="value" id="debtTotal" style="color: var(--danger);">0</div></div>
+            <div class="stat-card"><h4>إجمالي المبيعات</h4><div class="value" id="grandTotal" style="color: var(--secondary);">0</div></div>
+            <div class="stat-card"><h4>عدد العمليات</h4><div class="value" id="salesCount">0</div></div>
+        </div>
+        <div class="card">
+            <h3>⚡ اختصارات سريعة</h3>
+            <div class="btn-group">
+                <button class="btn-primary" onclick="showPage('sale')">🛒 بيع جديد</button>
+                <button class="btn-secondary" onclick="showPage('debts')">📒 سداد ديون الزبائن</button>
+                <button class="btn-warning" onclick="showPage('farms')">💰 تسليم مستحقات الجرب</button>
+                <button class="btn-success" onclick="showPage('wages')">👷 أجور العمال</button>
+                <button class="btn-neutral" onclick="showPage('salesLog')">🧾 سجل المبيعات</button>
+                <button class="btn-danger" onclick="clearAll()">🧹 تصفير النظام</button>
+            </div>
+        </div>
+        <div class="card"><h3>📊 ملخص الديون المتبقية</h3><div id="dashDebtSummary"></div></div>
+        <div class="card">
+            <h3>🕐 آخر 5 عمليات</h3>
+            <div class="table-container">
+                <table><thead><tr><th>المنتج</th><th>الإجمالي</th><th>النوع</th><th>الزبون/الجربة</th><th>التاريخ</th></tr></thead>
+                <tbody id="dashRecentSales"></tbody></table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sale -->
+    <section id="page-sale" class="page">
+        <h2 style="color: var(--primary); margin-top: 0;">🛒 إضافة عملية بيع جديدة</h2>
+        <div class="card">
+            <div class="grid-inputs">
+                <input id="product" placeholder="نوع القات">
+                <input id="price" type="number" placeholder="السعر">
+                <input id="qty" type="number" placeholder="الكمية">
+                <input id="customer" placeholder="اسم الزبون (للدين)">
+                <input id="farmName" placeholder="اسم الجربة" list="farmList">
+                <input id="ownerName" placeholder="اسم صاحب الجربة">
+                <div class="date-wrap">
+                    <input id="saleDate" placeholder="التاريخ والوقت">
+                    <button class="btn-today" onclick="setToday('saleDate', true)" title="الآن">📅</button>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-primary" onclick="sell('كاش')">💵 بيع كاش</button>
+                <button class="btn-secondary" onclick="sell('دين')">📒 بيع دين</button>
+                <button class="btn-neutral" onclick="printInvoice()">🧾 طباعة فاتورة جربة</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>🕐 آخر العمليات المسجلة</h3>
+            <div class="table-container">
+                <table><thead><tr><th>المنتج</th><th>الإجمالي</th><th>النوع</th><th>الزبون/الجربة</th><th>التاريخ</th></tr></thead>
+                <tbody id="recentSalesTable"></tbody></table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Debts -->
+    <section id="page-debts" class="page">
+        <h2 style="color: var(--primary); margin-top: 0;">📒 سداد ديون الزبائن</h2>
+        <div class="stats-grid">
+            <div class="stat-card"><h4>إجمالي الديون</h4><div class="value" id="debtGrandTotal" style="color: var(--danger);">0</div></div>
+            <div class="stat-card"><h4>إجمالي المسدد</h4><div class="value" id="debtPaidTotal">0</div></div>
+            <div class="stat-card"><h4>إجمالي المتبقي</h4><div class="value" id="debtRemainTotal" style="color: var(--secondary);">0</div></div>
+            <div class="stat-card"><h4>عدد الزبائن</h4><div class="value" id="debtCustCount">0</div></div>
+        </div>
+        <div class="card">
+            <h3>🔍 البحث عن زبون</h3>
+            <input type="text" class="search-bar" id="debtSearch" placeholder="اكتب اسم الزبون..." onkeyup="renderDebts()">
+            <div class="table-container">
+                <table><thead><tr><th>الزبون</th><th>إجمالي الدين</th><th>المسدد</th><th>المتبقي</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                <tbody id="debtsTable"></tbody></table>
+            </div>
+        </div>
+        <div class="card">
+            <h3>📜 سجل سداد الزبائن</h3>
+            <div class="hint-edit">💡 انقر على أي قيمة (بما فيها التاريخ) لتعديلها مباشرة</div>
+            <input type="text" class="search-bar" id="payHistSearch" placeholder="ابحث في السجل..." onkeyup="renderPayHistory()">
+            <div class="table-container">
+                <table><thead><tr><th>الزبون</th><th>المبلغ</th><th>المتبقي على الزبون الآن</th><th>المسدد</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+                <tbody id="payHistoryTable"></tbody></table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Farms -->
+    <section id="page-farms" class="page">
+        <h2 style="color: var(--primary); margin-top: 0;">💰 مستحقات الجرب (الملاك)</h2>
+        <div class="card">
+            <h3>📤 تسليم مبلغ لصاحب جربة</h3>
+            <div class="grid-inputs">
+                <input id="farmPayName" placeholder="اسم الجربة" list="farmList">
+                <input id="farmPayOwner" placeholder="اسم صاحبها">
+                <input id="farmPayAmount" type="number" placeholder="المبلغ المسلم">
+                <div class="date-wrap">
+                    <input id="farmPayDate" placeholder="التاريخ">
+                    <button class="btn-today" onclick="setToday('farmPayDate', false)" title="اليوم">📅</button>
+                </div>
+            </div>
+            <div class="btn-group"><button class="btn-primary" onclick="farmPay()">📤 تسليم مبلغ للمالك</button></div>
+        </div>
+        <div class="card">
+            <h3>📊 رصيد الجرب</h3>
+            <input type="text" class="search-bar" id="farmSearch" placeholder="ابحث عن جربة أو صاحب..." onkeyup="renderFarms()">
+            <div class="table-container">
+                <table><thead><tr><th>الجربة</th><th>المالك</th><th>إجمالي المبيعات</th><th>المسدد</th><th>المتبقي</th></tr></thead>
+                <tbody id="farmWalletTable"></tbody></table>
+            </div>
+        </div>
+        <div class="card">
+            <h3>📜 سجل تسليمات الملاك</h3>
+            <div class="hint-edit">💡 انقر على أي قيمة (بما فيها التاريخ) لتعديلها مباشرة</div>
+            <div class="table-container">
+                <table><thead><tr><th>الجربة</th><th>المالك</th><th>المبلغ</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+                <tbody id="farmPayDetailTable"></tbody></table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sales Log -->
+    <section id="page-salesLog" class="page">
+        <h2 style="color: var(--primary); margin-top: 0;">🧾 سجل المبيعات الكامل</h2>
+        <div class="card">
+            <div class="hint-edit">💡 انقر على أي قيمة (بما فيها التاريخ) لتعديلها مباشرة</div>
+            <input type="text" class="search-bar" id="salesSearch" placeholder="ابحث في المبيعات..." onkeyup="renderSalesLog()">
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>المنتج</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th><th>النوع</th><th>الزبون</th><th>الجربة</th><th>المالك</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+                    <tbody id="salesLogTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Wages -->
+    <section id="page-wages" class="page">
+        <h2 style="color: var(--primary); margin-top: 0;">👷 إدارة أجور العمال</h2>
+        <div class="stats-grid">
+            <div class="stat-card"><h4>إجمالي الأجور</h4><div class="value" id="wTotal">0</div></div>
+            <div class="stat-card"><h4>الخصومات</h4><div class="value" id="wDeductTotal" style="color: var(--danger);">0</div></div>
+            <div class="stat-card"><h4>صافي الأجور</h4><div class="value" id="wNetTotal" style="color: var(--secondary);">0</div></div>
+            <div class="stat-card"><h4>المسدد</h4><div class="value" id="wPaidTotal">0</div></div>
+            <div class="stat-card"><h4>المتبقي</h4><div class="value" id="wRemainTotal" style="color: var(--danger);">0</div></div>
+        </div>
+        <div class="card">
+            <h3>➕ إضافة أجر عامل</h3>
+            <div class="grid-inputs">
+                <input id="wWorker" placeholder="اسم العامل" list="workerList">
+                <input id="wFarm" placeholder="اسم الجربة" list="farmList">
+                <input id="wOwner" placeholder="اسم صاحب الجربة">
+                <input id="wDaily" type="number" placeholder="الأجر اليومي">
+                <input id="wDays" type="number" placeholder="عدد الأيام">
+                <input id="wDeduct" type="number" placeholder="الخصم">
+                <div class="date-wrap">
+                    <input id="wDate" placeholder="التاريخ">
+                    <button class="btn-today" onclick="setToday('wDate', false)" title="اليوم">📅</button>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-primary" onclick="addWage()">💾 حفظ أجر العامل</button>
+                <button class="btn-clear" onclick="clearWageForm()">🧹 مسح</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>📋 قائمة العمال</h3>
+            <div class="hint-edit">💡 انقر على أي قيمة (بما فيها التاريخ) لتعديلها مباشرة</div>
+            <input type="text" class="search-bar" id="wageSearch" placeholder="ابحث عن عامل، جربة، أو صاحب..." onkeyup="renderWages()">
+            <div class="table-container">
+                <table>
+                    <thead><tr><th>العامل</th><th>الجربة</th><th>المالك</th><th>الأجر اليومي</th><th>الأيام</th><th>الإجمالي</th><th>الخصم</th><th>الصافي</th><th>المسدد</th><th>المتبقي</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+                    <tbody id="wagesTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Net -->
+    <section id="page-net" class="page">
+        <h2 style="color: var(--primary); margin-top: 0;">🧮 حساب صافي صاحب الجربة</h2>
+        <div class="card">
+            <h3>اختر الجربة</h3>
+            <div class="grid-inputs">
+                <input id="netFarm" placeholder="اسم الجربة (الحق)" list="farmList">
+                <input id="netOwner" placeholder="اسم صاحب الجربة (اختياري)">
+            </div>
+            <div class="btn-group"><button class="btn-secondary" onclick="calcFarmNet()">📊 احسب الصافي</button></div>
+            <div id="netResult"></div>
+        </div>
+    </section>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">تعديل</h3>
+        <div id="modalBody"></div>
+        <div class="btn-group">
+            <button class="btn-primary" onclick="saveEdit()">💾 حفظ</button>
+            <button class="btn-clear" onclick="closeModal()">✖ إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<!-- Pay Modal -->
+<div class="modal-overlay" id="payModal">
+    <div class="modal-box">
+        <h3 id="payTitle">💵 سداد</h3>
+        <div id="payBody"></div>
+        <div class="btn-group">
+            <button class="btn-primary" onclick="savePay()">💾 تأكيد السداد</button>
+            <button class="btn-clear" onclick="closePayModal()">✖ إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<datalist id="farmList"></datalist>
+<datalist id="workerList"></datalist>
+
+<script>
+/* ============ البيانات ============ */
+let sales = JSON.parse(localStorage.getItem("sales")) || [];
+let farmPayments = JSON.parse(localStorage.getItem("farmPayments")) || [];
+let customerPayments = JSON.parse(localStorage.getItem("customerPayments")) || [];
+let wages = JSON.parse(localStorage.getItem("wages")) || [];
+
+let currentEdit = null;
+let currentPay = { type: null, key: null };
+let currentNetData = null;
+
+function save() {
+    localStorage.setItem("sales", JSON.stringify(sales));
+    localStorage.setItem("farmPayments", JSON.stringify(farmPayments));
+    localStorage.setItem("customerPayments", JSON.stringify(customerPayments));
+    localStorage.setItem("wages", JSON.stringify(wages));
+}
+const num = n => (Number(n) || 0).toLocaleString();
+const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+/* ============ أدوات التاريخ ============ */
+function todayDateTime() { return new Date().toLocaleString('ar-YE'); }
+function todayDateOnly()  { return new Date().toLocaleDateString('ar-YE'); }
+
+// ضبط قيمة حقل التاريخ على "الآن" أو "اليوم"
+function setToday(id, withTime) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = withTime ? todayDateTime() : todayDateOnly();
+}
+
+// ضبط القيم الافتراضية لحقول التاريخ في نماذج الإضافة (فقط إذا كانت فارغة)
+function initDateDefaults() {
+    const map = {
+        saleDate: true,
+        farmPayDate: false,
+        wDate: false
+    };
+    for (const id in map) {
+        const el = document.getElementById(id);
+        if (el && !el.value.trim()) {
+            el.value = map[id] ? todayDateTime() : todayDateOnly();
+        }
+    }
+}
+
+/* ============ التعديل الانفرادي ============ */
+function makeEditable(td, options) {
+    if (!td) return;
+    td.classList.add('editable');
+    td.title = 'انقر للتعديل';
+    td.addEventListener('click', function onClick() {
+        if (td.querySelector('.inline-editor')) return;
+        const currentValue = options.getValue();
+        let editor;
+        if (options.type === 'select') {
+            editor = document.createElement('select');
+            editor.className = 'inline-editor';
+            options.selectOptions.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt; o.textContent = opt;
+                if (opt === currentValue) o.selected = true;
+                editor.appendChild(o);
+            });
+        } else {
+            editor = document.createElement('input');
+            editor.type = options.type || 'text';
+            editor.value = currentValue;
+            editor.className = 'inline-editor';
+        }
+        const originalHTML = td.innerHTML;
+        td.innerHTML = '';
+        td.appendChild(editor);
+        editor.focus();
+        if (editor.select) editor.select();
+
+        let done = false;
+        const commit = () => {
+            if (done) return; done = true;
+            const newValue = editor.value;
+            if (String(newValue).trim() !== String(currentValue) && newValue !== '') {
+                options.onSave(newValue);
+            } else {
+                refreshAll();
+            }
+        };
+        const cancel = () => { if (done) return; done = true; td.innerHTML = originalHTML; };
+        editor.addEventListener('blur', commit);
+        editor.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); editor.blur(); }
+            if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+        });
+        if (editor.tagName === 'SELECT') editor.addEventListener('change', () => editor.blur());
+    });
+}
+
+/* ============ التنقل ============ */
+function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const target = document.getElementById('page-' + name);
+    if (target) target.classList.add('active');
+    const btn = document.querySelector(`.nav-btn[data-page="${name}"]`);
+    if (btn) btn.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    refreshAll();
+}
+
+/* ============ حساب الديون ============ */
+function computeCustomerDebts() {
+    const map = {};
+    sales.forEach(s => {
+        if (s.type === 'دين' && s.customer) {
+            if (!map[s.customer]) map[s.customer] = { total: 0, paid: 0, remaining: 0 };
+            map[s.customer].total += s.sum;
+        }
+    });
+    customerPayments.forEach(p => {
+        if (!map[p.name]) map[p.name] = { total: 0, paid: 0, remaining: 0 };
+        map[p.name].paid += p.amount;
+    });
+    Object.keys(map).forEach(k => { map[k].remaining = map[k].total - map[k].paid; });
+    return map;
+}
+
+/* ============ البيع ============ */
+function sell(type) {
+    if (!product.value || !price.value || !qty.value) return alert("يرجى إدخال المنتج والسعر والكمية");
+    let sum = price.value * qty.value;
+    let custName = customer.value || "عام";
+    if (type === 'دين' && !customer.value) return alert("يرجى كتابة اسم الزبون لتسجيل الدين");
+
+    // استخدام التاريخ المُدخل، أو اليوم تلقائياً
+    const dateVal = (document.getElementById('saleDate').value || '').trim() || todayDateTime();
+
+    sales.unshift({
+        p: product.value, price: +price.value, q: +qty.value, sum: sum,
+        type: type, customer: custName,
+        farm: farmName.value || "بدون",
+        owner: ownerName.value || "غير معروف",
+        date: dateVal
+    });
+    save();
+    product.value = price.value = qty.value = customer.value = "";
+    document.getElementById('saleDate').value = todayDateTime(); // إعادة تعيين للآن
+    refreshAll();
+    alert("✅ تم تسجيل العملية");
+}
+
+/* ============ تسليم مالك ============ */
+function farmPay() {
+    const farm = farmPayName.value.trim();
+    const owner = farmPayOwner.value.trim();
+    const amount = +farmPayAmount.value;
+    if (!farm || !amount) return alert("أكمل بيانات التسليم");
+
+    const dateVal = (document.getElementById('farmPayDate').value || '').trim() || todayDateOnly();
+    farmPayments.push({ farm, owner, amount, date: dateVal });
+    save();
+    farmPayName.value = farmPayOwner.value = farmPayAmount.value = "";
+    document.getElementById('farmPayDate').value = todayDateOnly();
+    refreshAll();
+    alert("✅ تم تسجيل التسليم");
+}
+
+/* ============ حذف ============ */
+function deleteSale(index) { if (confirm("حذف هذه العملية؟")) { sales.splice(index, 1); save(); refreshAll(); } }
+function deleteCustPay(index) { if (confirm("حذف سجل السداد؟")) { customerPayments.splice(index, 1); save(); refreshAll(); } }
+function deleteFarmPay(index) { if (confirm("حذف سجل التسليم؟")) { farmPayments.splice(index, 1); save(); refreshAll(); } }
+function deleteWage(id) {
+    if (!confirm("حذف سجل أجر هذا العامل؟")) return;
+    const i = wages.findIndex(x => x.id === id);
+    if (i > -1) { wages.splice(i, 1); save(); refreshAll(); }
+}
+
+/* ============ نافذة السداد ============ */
+function openCustomerPayModal(customer) {
+    const data = computeCustomerDebts()[customer];
+    if (!data || data.remaining <= 0) return alert("لا يوجد دين متبقٍ على هذا الزبون");
+    currentPay = { type: 'customer', key: customer };
+    document.getElementById('payTitle').textContent = '💵 سداد دين: ' + customer;
+    document.getElementById('payBody').innerHTML = `
+        <div class="info-box red">
+            <b>المتبقي: ${num(data.remaining)}</b><br>
+            إجمالي الدين: ${num(data.total)} | المسدد سابقاً: ${num(data.paid)}
+        </div>
+        <div class="modal-form">
+            <div class="form-field full"><label>المبلغ المسدد *</label>
+                <input id="payAmountInput" type="number" placeholder="أدخل المبلغ" max="${data.remaining}"></div>
+            <div class="form-field"><label>اسم المسدد</label>
+                <input id="payByNameInput" placeholder="اختياري"></div>
+            <div class="form-field"><label>التاريخ</label>
+                <div class="date-wrap">
+                    <input id="payDateInput" placeholder="التاريخ">
+                    <button class="btn-today" onclick="setToday('payDateInput', false)" title="اليوم">📅</button>
+                </div>
+            </div>
+        </div>`;
+    document.getElementById('payDateInput').value = todayDateOnly();
+    document.getElementById('payModal').classList.add('active');
+    setTimeout(() => document.getElementById('payAmountInput')?.focus(), 100);
+}
+
+function openWorkerPayModal(id) {
+    const w = wages.find(x => x.id === id);
+    if (!w) return;
+    const remain = w.net - w.paid;
+    if (remain <= 0) return alert("لا يوجد متبقي لهذا العامل");
+    currentPay = { type: 'worker', key: id };
+    document.getElementById('payTitle').textContent = '💵 سداد أجر: ' + w.worker;
+    document.getElementById('payBody').innerHTML = `
+        <div class="info-box blue">
+            <b>المتبقي: ${num(remain)}</b><br>
+            الصافي: ${num(w.net)} | المسدد: ${num(w.paid)}
+        </div>
+        <div class="modal-form">
+            <div class="form-field full"><label>المبلغ المسدد *</label>
+                <input id="payAmountInput" type="number" placeholder="أدخل المبلغ" max="${remain}"></div>
+            <div class="form-field full"><label>تاريخ السداد</label>
+                <div class="date-wrap">
+                    <input id="payDateInput" placeholder="التاريخ">
+                    <button class="btn-today" onclick="setToday('payDateInput', false)" title="اليوم">📅</button>
+                </div>
+            </div>
+        </div>`;
+    document.getElementById('payDateInput').value = todayDateOnly();
+    document.getElementById('payModal').classList.add('active');
+    setTimeout(() => document.getElementById('payAmountInput')?.focus(), 100);
+}
+
+function closePayModal() { document.getElementById('payModal').classList.remove('active'); currentPay = { type: null, key: null }; }
+
+function savePay() {
+    if (!currentPay.type) return;
+    const amount = +document.getElementById('payAmountInput').value;
+    if (!amount || amount <= 0) return alert("أدخل مبلغاً صحيحاً");
+    const payDate = (document.getElementById('payDateInput')?.value || '').trim() || todayDateOnly();
+
+    if (currentPay.type === 'customer') {
+        const data = computeCustomerDebts()[currentPay.key];
+        if (amount > data.remaining) return alert("المبلغ أكبر من الدين المتبقي");
+        const by = document.getElementById('payByNameInput')?.value.trim() || "نفسه";
+        customerPayments.unshift({
+            name: currentPay.key, amount, by,
+            date: payDate
+        });
+    } else if (currentPay.type === 'worker') {
+        const w = wages.find(x => x.id === currentPay.key);
+        const remain = w.net - w.paid;
+        if (amount > remain) return alert("المبلغ أكبر من المتبقي");
+        w.paid += amount;
+        // تسجيل تاريخ السداد في سجل العامل (نضيف تاريخ آخر سداد)
+        w.lastPayDate = payDate;
+    }
+    save(); closePayModal(); refreshAll();
+    alert("✅ تم السداد");
+}
+
+/* ============ الأجور ============ */
+function addWage() {
+    const worker = wWorker.value.trim();
+    const farm = wFarm.value.trim();
+    const owner = wOwner.value.trim();
+    const daily = +wDaily.value || 0;
+    const days = +wDays.value || 0;
+    const deduct = +wDeduct.value || 0;
+    if (!worker) return alert("أدخل اسم العامل");
+    if (!daily || !days) return alert("أدخل الأجر اليومي وعدد الأيام");
+
+    const dateVal = (document.getElementById('wDate').value || '').trim() || todayDateOnly();
+    const total = daily * days;
+    wages.unshift({
+        id: "w" + Date.now() + Math.floor(Math.random() * 999),
+        worker, farm: farm || "بدون", owner: owner || "غير معروف",
+        daily, days, total, deduct,
+        net: total - deduct, paid: 0,
+        date: dateVal
+    });
+    save(); clearWageForm(); refreshAll();
+    alert("✅ تم حفظ الأجر");
+}
+function clearWageForm() {
+    wWorker.value = wFarm.value = wOwner.value = "";
+    wDaily.value = wDays.value = wDeduct.value = "";
+    document.getElementById('wDate').value = todayDateOnly();
+}
+
+/* ============ التعديل الشامل ============ */
+function openEditModal(type, index) {
+    currentEdit = { type, index };
+    const title = document.getElementById('modalTitle');
+    const body = document.getElementById('modalBody');
+    let html = '';
+
+    if (type === 'sale') {
+        const s = sales[index];
+        title.textContent = '✏️ تعديل كامل لعملية البيع';
+        html = `<div class="modal-form">
+            <div class="form-field full"><label>المنتج</label><input id="edProduct" value="${esc(s.p)}"></div>
+            <div class="form-field"><label>السعر</label><input id="edPrice" type="number" value="${s.price}"></div>
+            <div class="form-field"><label>الكمية</label><input id="edQty" type="number" value="${s.q}"></div>
+            <div class="form-field"><label>النوع</label>
+                <select id="edType">
+                    <option value="كاش" ${s.type==='كاش'?'selected':''}>كاش</option>
+                    <option value="دين" ${s.type==='دين'?'selected':''}>دين</option>
+                </select></div>
+            <div class="form-field"><label>الزبون</label><input id="edCustomer" value="${esc(s.customer)}"></div>
+            <div class="form-field"><label>الجربة</label><input id="edFarm" value="${esc(s.farm)}" list="farmList"></div>
+            <div class="form-field"><label>المالك</label><input id="edOwner" value="${esc(s.owner)}"></div>
+            <div class="form-field full"><label>التاريخ</label>
+                <div class="date-wrap">
+                    <input id="edDate" value="${esc(s.date)}">
+                    <button class="btn-today" onclick="setToday('edDate', true)" title="الآن">📅</button>
+                </div>
+            </div>
+        </div>`;
+    } else if (type === 'wage') {
+        const w = wages[index];
+        title.textContent = '✏️ تعديل كامل لأجر العامل';
+        html = `<div class="modal-form">
+            <div class="form-field"><label>العامل</label><input id="edWorker" value="${esc(w.worker)}" list="workerList"></div>
+            <div class="form-field"><label>الجربة</label><input id="edFarm" value="${esc(w.farm)}" list="farmList"></div>
+            <div class="form-field"><label>المالك</label><input id="edOwner" value="${esc(w.owner)}"></div>
+            <div class="form-field"><label>الأجر اليومي</label><input id="edDaily" type="number" value="${w.daily}"></div>
+            <div class="form-field"><label>عدد الأيام</label><input id="edDays" type="number" value="${w.days}"></div>
+            <div class="form-field"><label>الخصم</label><input id="edDeduct" type="number" value="${w.deduct}"></div>
+            <div class="form-field"><label>المسدد</label><input id="edPaid" type="number" value="${w.paid}"></div>
+            <div class="form-field"><label>التاريخ</label>
+                <div class="date-wrap">
+                    <input id="edDate" value="${esc(w.date)}">
+                    <button class="btn-today" onclick="setToday('edDate', false)" title="اليوم">📅</button>
+                </div>
+            </div>
+        </div>`;
+    } else if (type === 'custPay') {
+        const p = customerPayments[index];
+        title.textContent = '✏️ تعديل كامل للسداد';
+        html = `<div class="modal-form">
+            <div class="form-field full"><label>الزبون</label><input id="edName" value="${esc(p.name)}"></div>
+            <div class="form-field"><label>المبلغ</label><input id="edAmount" type="number" value="${p.amount}"></div>
+            <div class="form-field"><label>المسدد</label><input id="edBy" value="${esc(p.by)}"></div>
+            <div class="form-field full"><label>التاريخ</label>
+                <div class="date-wrap">
+                    <input id="edDate" value="${esc(p.date)}">
+                    <button class="btn-today" onclick="setToday('edDate', false)" title="اليوم">📅</button>
+                </div>
+            </div>
+        </div>`;
+    } else if (type === 'farmPay') {
+        const p = farmPayments[index];
+        title.textContent = '✏️ تعديل كامل للتسليم';
+        html = `<div class="modal-form">
+            <div class="form-field"><label>الجربة</label><input id="edFarm" value="${esc(p.farm)}" list="farmList"></div>
+            <div class="form-field"><label>المالك</label><input id="edOwner" value="${esc(p.owner)}"></div>
+            <div class="form-field"><label>المبلغ</label><input id="edAmount" type="number" value="${p.amount}"></div>
+            <div class="form-field"><label>التاريخ</label>
+                <div class="date-wrap">
+                    <input id="edDate" value="${esc(p.date)}">
+                    <button class="btn-today" onclick="setToday('edDate', false)" title="اليوم">📅</button>
+                </div>
+            </div>
+        </div>`;
+    }
+    body.innerHTML = html;
+    document.getElementById('editModal').classList.add('active');
+}
+
+function closeModal() { document.getElementById('editModal').classList.remove('active'); currentEdit = null; }
+
+function saveEdit() {
+    if (!currentEdit) return;
+    const { type, index } = currentEdit;
+
+    if (type === 'sale') {
+        const s = sales[index];
+        s.p = document.getElementById('edProduct').value.trim();
+        s.price = +document.getElementById('edPrice').value || 0;
+        s.q = +document.getElementById('edQty').value || 0;
+        s.sum = s.price * s.q;
+        s.type = document.getElementById('edType').value;
+        s.customer = document.getElementById('edCustomer').value.trim() || 'عام';
+        s.farm = document.getElementById('edFarm').value.trim() || 'بدون';
+        s.owner = document.getElementById('edOwner').value.trim() || 'غير معروف';
+        s.date = document.getElementById('edDate').value.trim() || s.date;
+    } else if (type === 'wage') {
+        const w = wages[index];
+        w.worker = document.getElementById('edWorker').value.trim();
+        w.farm = document.getElementById('edFarm').value.trim() || 'بدون';
+        w.owner = document.getElementById('edOwner').value.trim() || 'غير معروف';
+        w.daily = +document.getElementById('edDaily').value || 0;
+        w.days = +document.getElementById('edDays').value || 0;
+        w.deduct = +document.getElementById('edDeduct').value || 0;
+        w.total = w.daily * w.days;
+        w.net = w.total - w.deduct;
+        w.paid = Math.min(+document.getElementById('edPaid').value || 0, w.net);
+        w.date = document.getElementById('edDate').value.trim() || w.date;
+    } else if (type === 'custPay') {
+        const p = customerPayments[index];
+        p.name = document.getElementById('edName').value.trim();
+        p.amount = +document.getElementById('edAmount').value || 0;
+        p.by = document.getElementById('edBy').value.trim() || 'نفسه';
+        p.date = document.getElementById('edDate').value.trim() || p.date;
+    } else if (type === 'farmPay') {
+        const p = farmPayments[index];
+        p.farm = document.getElementById('edFarm').value.trim();
+        p.owner = document.getElementById('edOwner').value.trim();
+        p.amount = +document.getElementById('edAmount').value || 0;
+        p.date = document.getElementById('edDate').value.trim() || p.date;
+    }
+    save(); refreshAll(); closeModal();
+}
+
+/* ============ العرض ============ */
+function refreshAll() {
+    renderDashboard();
+    renderDebts();
+    renderPayHistory();
+    renderFarms();
+    renderFarmPayDetail();
+    renderSalesLog();
+    renderWages();
+    renderRecentSales();
+    refreshDatalists();
+}
+
+function renderDashboard() {
+    let cash = 0, debt = 0;
+    sales.forEach(s => { if (s.type === 'كاش') cash += s.sum; else debt += s.sum; });
+    document.getElementById('cashTotal').innerText = num(cash);
+    document.getElementById('debtTotal').innerText = num(debt);
+    document.getElementById('grandTotal').innerText = num(cash + debt);
+    document.getElementById('salesCount').innerText = num(sales.length);
+
+    const debts = computeCustomerDebts();
+    let totalRemaining = 0, debtorsCount = 0;
+    for (const k in debts) if (debts[k].remaining > 0) { totalRemaining += debts[k].remaining; debtorsCount++; }
+    document.getElementById('dashDebtSummary').innerHTML = `
+        <div class="info-box red">إجمالي الديون المتبقية: <b>${num(totalRemaining)}</b> على <b>${debtorsCount}</b> زبون</div>
+        <div class="btn-group"><button class="btn-secondary" onclick="showPage('debts')">📒 إدارة ديون الزبائن</button></div>`;
+}
+
+function renderRecentSales() {
+    const recent = sales.slice(0, 5);
+    const html = recent.map(s => `
+        <tr>
+            <td>${esc(s.p)}</td>
+            <td><b>${num(s.sum)}</b></td>
+            <td><span class="badge badge-${s.type==='كاش'?'cash':'debt'}">${s.type}</span></td>
+            <td>${esc(s.customer !== 'عام' ? s.customer : s.farm)}</td>
+            <td><small>${esc(s.date)}</small></td>
+        </tr>`).join('');
+    const t1 = document.getElementById('dashRecentSales');
+    const t2 = document.getElementById('recentSalesTable');
+    if (t1) t1.innerHTML = html || '<tr><td colspan="5" class="empty">لا توجد عمليات</td></tr>';
+    if (t2) t2.innerHTML = html || '<tr><td colspan="5" class="empty">لا توجد عمليات</td></tr>';
+}
+
+function renderDebts() {
+    const key = (document.getElementById('debtSearch')?.value || '').toLowerCase();
+    const debts = computeCustomerDebts();
+    let total = 0, paid = 0, remain = 0, html = '';
+    const names = Object.keys(debts).sort((a,b) => debts[b].remaining - debts[a].remaining);
+
+    names.forEach(name => {
+        const d = debts[name];
+        total += d.total; paid += d.paid; remain += d.remaining;
+        if (key && !name.toLowerCase().includes(key)) return;
+        const status = d.remaining <= 0 ? '<span class="badge badge-cash">مسدد</span>' : '<span class="badge badge-debt">دين</span>';
+        html += `<tr>
+            <td><b>${esc(name)}</b></td>
+            <td>${num(d.total)}</td>
+            <td>${num(d.paid)}</td>
+            <td><b style="color:${d.remaining>0?'var(--danger)':'var(--primary)'}">${num(d.remaining)}</b></td>
+            <td>${status}</td>
+            <td class="actions-cell">
+                ${d.remaining > 0
+                    ? `<button class="btn-primary btn-sm" data-customer="${esc(name)}" onclick="openCustomerPayModal(this.dataset.customer)">💵 سداد</button>`
+                    : ''}
+            </td>
+        </tr>`;
+    });
+    document.getElementById('debtsTable').innerHTML = html || '<tr><td colspan="6" class="empty">لا يوجد زبائن مدينون</td></tr>';
+    document.getElementById('debtGrandTotal').innerText = num(total);
+    document.getElementById('debtPaidTotal').innerText = num(paid);
+    document.getElementById('debtRemainTotal').innerText = num(remain);
+    document.getElementById('debtCustCount').innerText = num(names.length);
+}
+
+function renderPayHistory() {
+    const key = (document.getElementById('payHistSearch')?.value || '').toLowerCase();
+    const debts = computeCustomerDebts();
+    let html = '';
+    customerPayments.forEach((p, i) => {
+        if (!(p.name + ' ' + p.by).toLowerCase().includes(key)) return;
+        const currentRemaining = debts[p.name]?.remaining || 0;
+        html += `<tr>
+            <td data-inline="cp-${i}-name">${esc(p.name)}</td>
+            <td data-inline="cp-${i}-amount">${num(p.amount)}</td>
+            <td><b style="color:${currentRemaining>0?'var(--danger)':'var(--primary)'}">${num(currentRemaining)}</b></td>
+            <td data-inline="cp-${i}-by">${esc(p.by)}</td>
+            <td data-inline="cp-${i}-date"><small>${esc(p.date)}</small></td>
+            <td class="actions-cell">
+                <button class="btn-secondary btn-sm" onclick="openEditModal('custPay',${i})">✏️ الكل</button>
+                <button class="btn-danger btn-sm" onclick="deleteCustPay(${i})">❌</button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById('payHistoryTable').innerHTML = html || '<tr><td colspan="6" class="empty">لا توجد سدادات</td></tr>';
+
+    customerPayments.forEach((p, i) => {
+        const bind = (field, opts) => {
+            const td = document.querySelector(`[data-inline="cp-${i}-${field}"]`);
+            if (td) makeEditable(td, opts);
+        };
+        bind('name', { type: 'text', getValue: () => p.name, onSave: v => { p.name = v; save(); refreshAll(); } });
+        bind('amount', { type: 'number', getValue: () => p.amount, onSave: v => { p.amount = +v || 0; save(); refreshAll(); } });
+        bind('by', { type: 'text', getValue: () => p.by, onSave: v => { p.by = v || 'نفسه'; save(); refreshAll(); } });
+        bind('date', { type: 'text', getValue: () => p.date, onSave: v => { p.date = v; save(); refreshAll(); } });
+    });
+}
+
+function renderFarms() {
+    const key = (document.getElementById('farmSearch')?.value || '').toLowerCase();
+    const farmAgg = {};
+    sales.forEach(s => {
+        if (s.farm && s.farm !== 'بدون') {
+            const k = s.farm + '||' + s.owner;
+            farmAgg[k] = (farmAgg[k] || 0) + s.sum;
+        }
+    });
+    const farmPaid = {};
+    farmPayments.forEach(p => {
+        const k = p.farm + '||' + p.owner;
+        farmPaid[k] = (farmPaid[k] || 0) + p.amount;
+    });
+    let html = '';
+    for (const k in farmAgg) {
+        const [fName, oName] = k.split('||');
+        if (k.toLowerCase().includes(key)) {
+            const total = farmAgg[k];
+            const paid = farmPaid[k] || 0;
+            html += `<tr>
+                <td><b>${esc(fName)}</b></td>
+                <td>${esc(oName)}</td>
+                <td>${num(total)}</td>
+                <td>${num(paid)}</td>
+                <td><b style="color:${total-paid>0?'var(--danger)':'var(--primary)'}">${num(total-paid)}</b></td>
+            </tr>`;
+        }
+    }
+    document.getElementById('farmWalletTable').innerHTML = html || '<tr><td colspan="5" class="empty">لا توجد جرب</td></tr>';
+}
+
+function renderFarmPayDetail() {
+    let html = '';
+    farmPayments.forEach((p, i) => {
+        html += `<tr>
+            <td data-inline="fp-${i}-farm">${esc(p.farm)}</td>
+            <td data-inline="fp-${i}-owner">${esc(p.owner)}</td>
+            <td data-inline="fp-${i}-amount">${num(p.amount)}</td>
+            <td data-inline="fp-${i}-date"><small>${esc(p.date)}</small></td>
+            <td class="actions-cell">
+                <button class="btn-secondary btn-sm" onclick="openEditModal('farmPay',${i})">✏️ الكل</button>
+                <button class="btn-danger btn-sm" onclick="deleteFarmPay(${i})">❌</button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById('farmPayDetailTable').innerHTML = html || '<tr><td colspan="5" class="empty">لا توجد تسليمات</td></tr>';
+
+    farmPayments.forEach((p, i) => {
+        const bind = (field, opts) => {
+            const td = document.querySelector(`[data-inline="fp-${i}-${field}"]`);
+            if (td) makeEditable(td, opts);
+        };
+        bind('farm', { type: 'text', getValue: () => p.farm, onSave: v => { p.farm = v; save(); refreshAll(); } });
+        bind('owner', { type: 'text', getValue: () => p.owner, onSave: v => { p.owner = v; save(); refreshAll(); } });
+        bind('amount', { type: 'number', getValue: () => p.amount, onSave: v => { p.amount = +v || 0; save(); refreshAll(); } });
+        bind('date', { type: 'text', getValue: () => p.date, onSave: v => { p.date = v; save(); refreshAll(); } });
+    });
+}
+
+function renderSalesLog() {
+    const key = (document.getElementById('salesSearch')?.value || '').toLowerCase();
+    let html = '';
+    sales.forEach((s, i) => {
+        const text = `${s.p} ${s.customer} ${s.farm} ${s.owner} ${s.type} ${s.date}`.toLowerCase();
+        if (!text.includes(key)) return;
+        html += `<tr>
+            <td data-inline="s-${i}-p">${esc(s.p)}</td>
+            <td data-inline="s-${i}-price">${num(s.price)}</td>
+            <td data-inline="s-${i}-q">${num(s.q)}</td>
+            <td><b>${num(s.sum)}</b></td>
+            <td data-inline="s-${i}-type"><span class="badge badge-${s.type==='كاش'?'cash':'debt'}">${s.type}</span></td>
+            <td data-inline="s-${i}-customer">${esc(s.customer)}</td>
+            <td data-inline="s-${i}-farm">${esc(s.farm)}</td>
+            <td data-inline="s-${i}-owner">${esc(s.owner)}</td>
+            <td data-inline="s-${i}-date"><small>${esc(s.date)}</small></td>
+            <td class="actions-cell">
+                <button class="btn-secondary btn-sm" onclick="openEditModal('sale',${i})">✏️ الكل</button>
+                <button class="btn-danger btn-sm" onclick="deleteSale(${i})">❌</button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById('salesLogTable').innerHTML = html || '<tr><td colspan="10" class="empty">لا توجد سجلات</td></tr>';
+
+    sales.forEach((s, i) => {
+        const bind = (field, opts) => {
+            const td = document.querySelector(`[data-inline="s-${i}-${field}"]`);
+            if (td) makeEditable(td, opts);
+        };
+        bind('p', { type: 'text', getValue: () => s.p, onSave: v => { s.p = v; save(); refreshAll(); } });
+        bind('price', { type: 'number', getValue: () => s.price, onSave: v => { s.price = +v || 0; s.sum = s.price * s.q; save(); refreshAll(); } });
+        bind('q', { type: 'number', getValue: () => s.q, onSave: v => { s.q = +v || 0; s.sum = s.price * s.q; save(); refreshAll(); } });
+        bind('type', { type: 'select', selectOptions: ['كاش','دين'], getValue: () => s.type, onSave: v => { s.type = v; save(); refreshAll(); } });
+        bind('customer', { type: 'text', getValue: () => s.customer, onSave: v => { s.customer = v || 'عام'; save(); refreshAll(); } });
+        bind('farm', { type: 'text', getValue: () => s.farm, onSave: v => { s.farm = v || 'بدون'; save(); refreshAll(); } });
+        bind('owner', { type: 'text', getValue: () => s.owner, onSave: v => { s.owner = v || 'غير معروف'; save(); refreshAll(); } });
+        bind('date', { type: 'text', getValue: () => s.date, onSave: v => { s.date = v; save(); refreshAll(); } });
+    });
+}
+
+function renderWages() {
+    const key = (document.getElementById('wageSearch')?.value || '').toLowerCase();
+    let html = '';
+    let tTotal = 0, tDeduct = 0, tNet = 0, tPaid = 0, tRemain = 0;
+
+    wages.forEach((w, i) => {
+        const txt = `${w.worker} ${w.farm} ${w.owner}`.toLowerCase();
+        if (!txt.includes(key)) return;
+        const remain = w.net - w.paid;
+        tTotal += w.total; tDeduct += w.deduct; tNet += w.net; tPaid += w.paid; tRemain += remain;
+        html += `<tr>
+            <td data-inline="w-${i}-worker"><b>${esc(w.worker)}</b></td>
+            <td data-inline="w-${i}-farm">${esc(w.farm)}</td>
+            <td data-inline="w-${i}-owner">${esc(w.owner)}</td>
+            <td data-inline="w-${i}-daily">${num(w.daily)}</td>
+            <td data-inline="w-${i}-days">${num(w.days)}</td>
+            <td>${num(w.total)}</td>
+            <td data-inline="w-${i}-deduct" style="color:var(--danger)">${num(w.deduct)}</td>
+            <td><b style="color:var(--secondary)">${num(w.net)}</b></td>
+            <td data-inline="w-${i}-paid">${num(w.paid)}</td>
+            <td><b style="color:${remain>0?'var(--danger)':'var(--primary)'}">${num(remain)}</b></td>
+            <td data-inline="w-${i}-date"><small>${esc(w.date)}</small></td>
+            <td class="actions-cell">
+                <button class="btn-primary btn-sm" data-id="${esc(w.id)}" onclick="openWorkerPayModal(this.dataset.id)">💵</button>
+                <button class="btn-secondary btn-sm" onclick="openEditModal('wage',${i})">✏️</button>
+                <button class="btn-danger btn-sm" data-id="${esc(w.id)}" onclick="deleteWage(this.dataset.id)">❌</button>
+            </td>
+        </tr>`;
+    });
+    document.getElementById('wagesTable').innerHTML = html || '<tr><td colspan="12" class="empty">لا توجد سجلات</td></tr>';
+    document.getElementById('wTotal').innerText = num(tTotal);
+    document.getElementById('wDeductTotal').innerText = num(tDeduct);
+    document.getElementById('wNetTotal').innerText = num(tNet);
+    document.getElementById('wPaidTotal').innerText = num(tPaid);
+    document.getElementById('wRemainTotal').innerText = num(tRemain);
+
+    wages.forEach((w, i) => {
+        const bind = (field, opts) => {
+            const td = document.querySelector(`[data-inline="w-${i}-${field}"]`);
+            if (td) makeEditable(td, opts);
+        };
+        bind('worker', { type: 'text', getValue: () => w.worker, onSave: v => { w.worker = v; save(); refreshAll(); } });
+        bind('farm', { type: 'text', getValue: () => w.farm, onSave: v => { w.farm = v || 'بدون'; save(); refreshAll(); } });
+        bind('owner', { type: 'text', getValue: () => w.owner, onSave: v => { w.owner = v || 'غير معروف'; save(); refreshAll(); } });
+        bind('daily', { type: 'number', getValue: () => w.daily, onSave: v => {
+            w.daily = +v || 0; w.total = w.daily * w.days; w.net = w.total - w.deduct;
+            if (w.paid > w.net) w.paid = w.net; save(); refreshAll();
+        }});
+        bind('days', { type: 'number', getValue: () => w.days, onSave: v => {
+            w.days = +v || 0; w.total = w.daily * w.days; w.net = w.total - w.deduct;
+            if (w.paid > w.net) w.paid = w.net; save(); refreshAll();
+        }});
+        bind('deduct', { type: 'number', getValue: () => w.deduct, onSave: v => {
+            w.deduct = +v || 0; w.net = w.total - w.deduct;
+            if (w.paid > w.net) w.paid = w.net; save(); refreshAll();
+        }});
+        bind('paid', { type: 'number', getValue: () => w.paid, onSave: v => {
+            w.paid = Math.min(+v || 0, w.net); save(); refreshAll();
+        }});
+        bind('date', { type: 'text', getValue: () => w.date, onSave: v => { w.date = v; save(); refreshAll(); } });
+    });
+}
+
+function refreshDatalists() {
+    const farms = new Set(), workers = new Set();
+    sales.forEach(s => { if (s.farm && s.farm !== 'بدون') farms.add(s.farm); });
+    wages.forEach(w => {
+        if (w.farm && w.farm !== 'بدون') farms.add(w.farm);
+        if (w.worker) workers.add(w.worker);
+    });
+    document.getElementById('farmList').innerHTML = [...farms].map(f => `<option value="${esc(f)}">`).join('');
+    document.getElementById('workerList').innerHTML = [...workers].map(w => `<option value="${esc(w)}">`).join('');
+}
+
+/* ============ صافي المالك (الخصم ينقص) ============ */
+function calcFarmNet() {
+    const farm = document.getElementById('netFarm').value.trim();
+    if (!farm) return alert("أدخل اسم الجربة أولاً");
+
+    let salesTotal = 0, cashPart = 0, debtPart = 0;
+    sales.forEach(s => {
+        if ((s.farm || '').trim() === farm) {
+            salesTotal += s.sum;
+            if (s.type === 'كاش') cashPart += s.sum; else debtPart += s.sum;
+        }
+    });
+    let wTotal = 0, wDeduct = 0, wPaid = 0, wRemain = 0, wCount = 0;
+    wages.forEach(w => {
+        if ((w.farm || '').trim() === farm) {
+            wCount++; wTotal += w.total; wDeduct += w.deduct;
+            wPaid += w.paid; wRemain += (w.net - w.paid);
+        }
+    });
+    let ownerPaid = 0;
+    farmPayments.forEach(p => { if ((p.farm || '').trim() === farm) ownerPaid += p.amount; });
+
+    const wageNet = wTotal - wDeduct;
+    const ownerNet = salesTotal - wTotal - ownerPaid - wDeduct;
+
+    let ownerName = document.getElementById('netOwner').value.trim();
+    if (!ownerName) {
+        const f = sales.find(s => (s.farm || '').trim() === farm && s.owner && s.owner !== 'غير معروف');
+        ownerName = f ? f.owner : 'غير معروف';
+    }
+    currentNetData = { farm, owner: ownerName, amount: ownerNet };
+
+    document.getElementById('netResult').innerHTML = `
+        <div class="info-box blue">
+            <div class="net-row"><span>الجربة</span><b>${esc(farm)}</b></div>
+            <div class="net-row"><span>صاحب الجربة</span><b>${esc(ownerName)}</b></div>
+        </div>
+        <div class="info-box green">
+            <div class="net-row"><span>إجمالي المبيعات</span><b>${num(salesTotal)}</b></div>
+            <div class="net-row"><span>↳ كاش</span><b>${num(cashPart)}</b></div>
+            <div class="net-row"><span>↳ دين</span><b>${num(debtPart)}</b></div>
+        </div>
+        <div class="info-box">
+            <div class="net-row"><span>عدد سجلات العمال</span><b>${wCount}</b></div>
+            <div class="net-row"><span>إجمالي أجور العمال</span><b>${num(wTotal)}</b></div>
+            <div class="net-row"><span>صافي مستحق العمال</span><b>${num(wageNet)}</b></div>
+            <div class="net-row" style="color:var(--danger)"><span>الخصم على الجربة</span><b>- ${num(wDeduct)}</b></div>
+            <div class="net-row"><span>المسدد للعمال</span><b>${num(wPaid)}</b></div>
+            <div class="net-row"><span>المتبقي للعمال</span><b style="color:var(--danger)">${num(wRemain)}</b></div>
+        </div>
+        <div class="info-box red">
+            <div class="net-row"><span>المسلم للمالك سابقاً</span><b>${num(ownerPaid)}</b></div>
+        </div>
+        <div class="net-row total ${ownerNet < 0 ? 'negative' : ''}">
+            <span>💰 صافي مستحق صاحب الجربة</span>
+            <span>${num(ownerNet)}</span>
+        </div>
+        <div class="btn-group">
+            <button class="btn-primary" onclick="submitOwnerNet()">📤 تسجيل تسليم الصافي للمالك</button>
+        </div>`;
+}
+
+function submitOwnerNet() {
+    if (!currentNetData) return;
+    const { farm, owner, amount } = currentNetData;
+    if (!amount || amount <= 0) return alert("لا يوجد مبلغ صالح للتسليم");
+    if (!confirm(`تسليم مبلغ ${amount} لصاحب الجربة ${farm}؟`)) return;
+    farmPayments.push({ farm, owner, amount, date: todayDateOnly() });
+    save(); refreshAll(); calcFarmNet();
+    alert("✅ تم تسجيل التسليم");
+}
+
+/* ============ طباعة ============ */
+function printInvoice() {
+    const f = farmName.value.trim();
+    const o = ownerName.value.trim();
+    if (!f) return alert("أدخل اسم الجربة أولاً");
+    const filtered = sales.filter(s => s.farm === f);
+    const total = filtered.reduce((a, b) => a + b.sum, 0);
+    const win = window.open('', '', 'width=700,height=800');
+    const rows = filtered.map(s => `<tr><td>${s.p}</td><td>${s.price}</td><td>${s.q}</td><td>${s.sum}</td><td>${s.date}</td></tr>`).join('');
+    win.document.write(`<html dir="rtl"><head><title>فاتورة</title>
+        <style>table{width:100%;border-collapse:collapse;} th,td{border:1px solid #000;padding:8px;text-align:center;}</style></head><body>
+        <h2 style="text-align:center;">فاتورة مبيعات جربة</h2>
+        <p>اسم الجربة: ${f} | المالك: ${o}</p>
+        <table><thead><tr><th>المنتج</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th><th>التاريخ</th></tr></thead>
+        <tbody>${rows}</tbody></table>
+        <h3 style="text-align:left;">الإجمالي المستحق: ${total}</h3>
+    </body></html>`);
+    win.document.close();
+}
+
+/* ============ تصفير ============ */
+function clearAll() {
+    if (confirm("⚠️ هل أنت متأكد من مسح جميع السجلات؟ لا يمكن التراجع!")) {
+        localStorage.clear(); location.reload();
+    }
+}
+
+/* ============ إغلاق ============ */
+document.getElementById('editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeModal(); });
+document.getElementById('payModal').addEventListener('click', e => { if (e.target.id === 'payModal') closePayModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closePayModal(); } });
+
+/* ============ تشغيل ============ */
+initDateDefaults();
+refreshAll();
+</script>
+</body>
+</html>
